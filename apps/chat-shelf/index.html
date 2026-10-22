@@ -1,0 +1,1106 @@
+<title>Chat Shelf</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a library card drawer. Projects are the drawer tabs on the left, chats are the cards, one AI action bar above. */
+:root {
+  --bg: #eceff3;
+  --surface: #ffffff;
+  --sunk: #e2e6ec;
+  --ink: #17202b;
+  --muted: #5a6677;
+  --line: #d3d9e1;
+  --accent: #8a2c6e;
+  --accent-ink: #ffffff;
+  --accent-soft: #f4e3ef;
+  --warn: #a15c00;
+  --danger: #b42318;
+  --src-chatgpt: #13805d;
+  --src-claude: #b85a2a;
+  --src-gemini: #2f62cc;
+  --src-perplexity: #187c8f;
+  --src-other: #6b7280;
+  --shadow: 0 1px 2px rgba(23, 32, 43, .06), 0 8px 24px rgba(23, 32, 43, .08);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --surface: #1a2029; --sunk: #151a21; --ink: #e5e9ef; --muted: #98a3b3; --line: #2b3440;
+    --accent: #e48bc9; --accent-ink: #1c0f18; --accent-soft: #3a2133; --warn: #f0b45a; --danger: #ff8a7a;
+    --src-chatgpt: #4cc79b; --src-claude: #ec9a6b; --src-gemini: #7fa6f5; --src-perplexity: #5cc3d4; --src-other: #a1a8b3;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #1a2029; --sunk: #151a21; --ink: #e5e9ef; --muted: #98a3b3; --line: #2b3440;
+  --accent: #e48bc9; --accent-ink: #1c0f18; --accent-soft: #3a2133; --warn: #f0b45a; --danger: #ff8a7a;
+  --src-chatgpt: #4cc79b; --src-claude: #ec9a6b; --src-gemini: #7fa6f5; --src-perplexity: #5cc3d4; --src-other: #a1a8b3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 48px; display: flex; flex-direction: column; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { background: transparent; }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 13.5px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.danger { color: var(--danger); }
+
+/* Top */
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 20px; }
+.brand h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -.02em; }
+.brand p { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tally { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.tally b { color: var(--ink); font-weight: 600; }
+.sync { font-size: 12.5px; color: var(--muted); }
+
+.banner { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: var(--r); background: var(--accent-soft); border: 1px dashed var(--accent); }
+.banner p { margin: 0; }
+
+/* Ask bar */
+.ask { display: flex; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 5px 5px 18px; box-shadow: var(--shadow); }
+.ask input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 16px; }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.answer .md { max-width: 72ch; }
+.answer-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.cites { display: flex; flex-wrap: wrap; gap: 6px; }
+.cite { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--sunk); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Main layout */
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.drawer { display: flex; flex-direction: column; gap: 2px; }
+.tab { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 8px; border: 0; background: transparent; min-height: 40px; }
+.tab:hover { background: var(--sunk); }
+.tab.on { background: var(--surface); box-shadow: var(--shadow); font-weight: 600; }
+.tab .n { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+.tab .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.newproj { display: flex; gap: 6px; }
+.newproj input { flex: 1; min-width: 0; min-height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 10px; }
+.srcs { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; min-height: 32px; }
+.chip.on { border-color: var(--ink); font-weight: 600; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--src-other)); flex: none; }
+
+main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.phead { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.phead h2 { font-size: 24px; font-weight: 700; }
+.phead .tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.summary { border-top: 1px solid var(--line); padding-top: 10px; }
+.md { line-height: 1.6; }
+.md h4 { font-family: var(--font-display); font-size: 16px; margin: 12px 0 4px; }
+.md h4:first-child { margin-top: 0; }
+.md ul { margin: 4px 0; padding-left: 20px; }
+.md p { margin: 4px 0; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filters input[type=search] { flex: 1 1 220px; min-width: 0; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 12px; }
+.filters select { min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 10px; }
+
+/* Chat cards */
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.card { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 0 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.card .stripe { background: var(--c, var(--src-other)); }
+.card .body { padding: 11px 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.card .t { font-weight: 600; background: none; border: 0; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .t:hover { color: var(--accent); }
+.card .snip { color: var(--muted); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.card .ctl { display: flex; flex-direction: column; justify-content: center; align-items: end; gap: 6px; padding: 8px 12px 8px 0; }
+.card select { max-width: 180px; min-height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--sunk); padding: 0 8px; font-size: 13px; }
+.pill { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.warn { color: var(--warn); }
+.pill.danger { color: var(--danger); }
+.pill.acc { color: var(--accent); }
+.marks { display: flex; gap: 4px; }
+.mark { min-height: 30px; min-width: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: transparent; font-size: 12.5px; color: var(--muted); }
+.mark.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.mark.on.del { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.more { align-self: center; }
+.empty { text-align: center; padding: 36px 16px; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--r); }
+
+/* Sheets */
+.scrim { position: fixed; inset: 0; background: rgba(10, 14, 20, .45); z-index: 40; display: flex; justify-content: center; align-items: flex-end; padding-top: calc(env(safe-area-inset-top, 0px) + 24px); }
+.sheet { width: min(860px, 100%); max-height: 100%; overflow: auto; background: var(--bg); border-radius: 16px 16px 0 0; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); padding-block: 18px calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 700px) { .scrim { align-items: center; padding: 24px; } .sheet { border-radius: 16px; max-height: calc(100% - 24px); } }
+.sheet-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.sheet-head h2 { font-size: 24px; }
+.howto { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.how { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.how h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.how ol { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+.how p { margin: 0; font-size: 13.5px; color: var(--muted); }
+.drop { border: 2px dashed var(--line); border-radius: var(--r); padding: 22px 16px; text-align: center; background: var(--surface); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.paste { display: flex; flex-direction: column; gap: 8px; }
+.paste textarea { min-height: 120px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 10px; resize: vertical; }
+.paste .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.paste input, .paste select { min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 10px; flex: 1 1 160px; min-width: 0; }
+.log { font-family: var(--font-mono); font-size: 12.5px; background: var(--sunk); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.transcript { display: flex; flex-direction: column; gap: 10px; }
+.msg { padding: 10px 14px; border-radius: 12px; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; }
+.msg.u { align-self: flex-end; background: var(--accent-soft); }
+.msg.a { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); }
+.plan { font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.plan a { color: var(--accent); }
+
+.progress { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.busy { display: flex; flex-direction: column; gap: 8px; }
+
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; z-index: 60; font-size: 14px; max-width: calc(100% - 32px); }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; }
+  .drawer { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .tab { width: auto; flex: none; border: 1px solid var(--line); background: var(--surface); }
+  .tab .nm { max-width: 180px; }
+}
+@media (max-width: 560px) {
+  .card { grid-template-columns: 4px minmax(0, 1fr); }
+  .card .ctl { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: start; align-items: center; padding: 0 12px 10px 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Chat Shelf</h1>
+      <p>Every ChatGPT, Claude, Gemini and Perplexity conversation, sorted into projects in one place.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnImport" type="button">Import chats</button>
+      <button class="btn primary" id="btnOrganize" type="button">Organize with AI</button>
+    </div>
+  </header>
+  <div class="tally" id="tally"></div>
+
+  <div class="banner" id="exampleBanner" hidden>
+    <p><b>You're looking at example chats.</b> Import your own history and these disappear.</p>
+    <button class="btn small primary" id="btnImport2" type="button">Import my chats</button>
+  </div>
+
+  <div id="busy" class="panel busy" hidden>
+    <div class="phead"><b id="busyText">Working…</b><button class="btn small ghost" id="btnStop" type="button">Stop</button></div>
+    <div class="progress"><i id="busyBar"></i></div>
+  </div>
+
+  <form class="ask" id="askForm">
+    <input id="askInput" type="text" placeholder="Ask across all your chats, e.g. “What did I decide about my resume?”" autocomplete="off">
+    <button class="btn primary small" type="submit">Ask</button>
+  </form>
+  <div class="answer" id="answer" hidden></div>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="label">Projects</div>
+      <div class="drawer" id="drawer"></div>
+      <form class="newproj" id="newProjForm">
+        <input id="newProjName" type="text" placeholder="New project name" maxlength="60" autocomplete="off">
+        <button class="btn small" type="submit">Add</button>
+      </form>
+      <div class="label">Apps</div>
+      <div class="srcs" id="srcs"></div>
+      <div class="label">Tools</div>
+      <div class="srcs">
+        <button class="chip" id="btnCleanup" type="button">Cleanup checklist</button>
+        <button class="chip" id="btnUndo" type="button" hidden>Undo last AI sort</button>
+        <button class="chip" id="btnBackup" type="button">Save a backup</button>
+        <button class="chip" id="btnWipe" type="button">Remove all data</button>
+      </div>
+      <div class="sync" id="sync">Checking sync…</div>
+    </aside>
+
+    <main>
+      <section class="panel" id="projPanel"></section>
+      <div class="filters">
+        <input type="search" id="search" placeholder="Filter by words in the title or chat" autocomplete="off">
+        <select id="sort" aria-label="Sort">
+          <option value="recent">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="longest">Longest first</option>
+          <option value="title">A to Z</option>
+        </select>
+      </div>
+      <div class="cards" id="cards"></div>
+    </main>
+  </div>
+</div>
+
+<!-- Import sheet -->
+<div class="scrim" id="importSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <div class="sheet-head">
+      <div>
+        <h2 id="importTitle">Bring your chats in</h2>
+        <p class="muted" style="margin:4px 0 0">Each app emails you a download link. Save the file to Files on your iPad, then choose it below. Your chats stay on this iPad.</p>
+      </div>
+      <button class="btn small ghost" data-close type="button">Close</button>
+    </div>
+    <div class="howto">
+      <div class="how"><h3><span class="dot" style="--c:var(--src-chatgpt)"></span>ChatGPT</h3>
+        <ol><li>Settings → Data controls → Export data</li><li>Open the email, download the .zip</li><li>Choose the .zip here</li></ol></div>
+      <div class="how"><h3><span class="dot" style="--c:var(--src-claude)"></span>Claude</h3>
+        <ol><li>Settings → Privacy → Export data</li><li>Download the .zip from the email</li><li>Choose the .zip here</li></ol></div>
+      <div class="how"><h3><span class="dot" style="--c:var(--src-gemini)"></span>Gemini</h3>
+        <ol><li>Go to takeout.google.com</li><li>Deselect all, then tick <b>My Activity</b> and pick only <b>Gemini Apps</b></li><li>Choose the .zip here</li></ol></div>
+      <div class="how"><h3><span class="dot" style="--c:var(--src-perplexity)"></span>Perplexity</h3>
+        <p>Perplexity has no full-history export. Open a thread, tap <b>Share → Export → Markdown</b>, then choose the files here (several at once is fine). Or paste a thread below.</p></div>
+    </div>
+    <label class="drop" id="drop">
+      <b>Choose export files</b>
+      <span class="muted">.zip, .json, .html, .md or .txt. Several at once is fine.</span>
+      <input type="file" id="fileInput" multiple accept=".zip,.json,.html,.htm,.md,.markdown,.txt,application/zip,application/json,text/html,text/markdown,text/plain">
+    </label>
+    <div class="log" id="importLog" hidden></div>
+    <div class="paste">
+      <div class="label">Or paste one chat</div>
+      <div class="row">
+        <input id="pasteTitle" type="text" placeholder="Title (optional)">
+        <select id="pasteSrc" aria-label="Which app">
+          <option value="perplexity">Perplexity</option>
+          <option value="chatgpt">ChatGPT</option>
+          <option value="claude">Claude</option>
+          <option value="gemini">Gemini</option>
+          <option value="other">Other app</option>
+        </select>
+        <input id="pasteUrl" type="url" placeholder="Link to the chat (optional)">
+      </div>
+      <textarea id="pasteText" placeholder="Paste the conversation text here"></textarea>
+      <div><button class="btn small" id="btnPaste" type="button">Add this chat</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat sheet -->
+<div class="scrim" id="chatSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
+    <div class="sheet-head">
+      <div style="min-width:0">
+        <h2 id="chatTitle"></h2>
+        <div class="card" style="border:0;background:none;display:block"><div class="meta" id="chatMeta"></div></div>
+      </div>
+      <button class="btn small ghost" data-close type="button">Close</button>
+    </div>
+    <div class="transcript" id="chatBody"></div>
+  </div>
+</div>
+
+<!-- Plan sheet -->
+<div class="scrim" id="planSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="planTitle">
+    <div class="sheet-head">
+      <div>
+        <h2 id="planTitle">Cleanup checklist</h2>
+        <p class="muted" style="margin:4px 0 0" id="planIntro"></p>
+      </div>
+      <button class="btn small ghost" data-close type="button">Close</button>
+    </div>
+    <div><button class="btn small" id="btnCopyPlan" type="button">Copy checklist</button></div>
+    <div class="plan" id="planBody"></div>
+  </div>
+</div>
+
+<!-- Confirm sheet -->
+<div class="scrim" id="confirmSheet" hidden>
+  <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" style="max-width:480px">
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmText" style="margin:0"></p>
+    <div class="actions"><button class="btn danger" id="confirmYes" type="button">Yes</button><button class="btn" data-close type="button">Cancel</button></div>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(() => {
+"use strict";
+
+// ---------- constants ----------
+const SOURCES = {
+  chatgpt:    { label: "ChatGPT",    color: "var(--src-chatgpt)",    url: id => `https://chatgpt.com/c/${id}` },
+  claude:     { label: "Claude",     color: "var(--src-claude)",     url: id => `https://claude.ai/chat/${id}` },
+  gemini:     { label: "Gemini",     color: "var(--src-gemini)" },
+  perplexity: { label: "Perplexity", color: "var(--src-perplexity)" },
+  other:      { label: "Other",      color: "var(--src-other)" },
+};
+const PREFIX = { chatgpt: "g", claude: "c", gemini: "m", perplexity: "p", other: "x" };
+const QUICK = "quick";          // built-in project for one-off questions
+const PAGE = 60;                // cards shown per "show more"
+const AI_BATCH_BYTES = 110000;  // per organize call
+
+// ---------- state ----------
+const S = {
+  chats: [], byId: new Map(),
+  org: { projects: [], meta: {}, updatedAt: 0 },
+  example: false,
+  view: "all", src: "all", q: "", sort: "recent", shown: PAGE,
+  undo: null, abort: null,
+};
+
+// ---------- small helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+const fmtDate = ms => ms ? new Date(ms).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "No date";
+const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
+const chatId = (src, oid) => PREFIX[src] + hash(src + ":" + oid);
+const toMs = v => { if (v == null || v === "") return 0; if (typeof v === "number") return v < 1e12 ? Math.round(v * 1000) : v; const t = Date.parse(v); return isNaN(t) ? 0 : t; };
+const projId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+const safe = async (fn, fallback) => { try { return await fn(); } catch (e) { return fallback; } };
+
+function metaOf(id) { const v = S.org.meta[id] || ""; const [p = "", s = ""] = v.split("|"); return { p, s }; }
+function setMeta(id, p, s) { const v = (p || "") + (s ? "|" + s : ""); if (v) S.org.meta[id] = v; else delete S.org.meta[id]; }
+function projName(pid) { if (pid === QUICK) return "Quick questions"; return S.org.projects.find(p => p.id === pid)?.name || ""; }
+function textOf(c) { return c.msgs.map(m => m[1]).join("\n"); }
+function firstUser(c) { return (c.msgs.find(m => m[0] === "u") || c.msgs[0] || ["", ""])[1]; }
+function lastAssistant(c) { for (let i = c.msgs.length - 1; i >= 0; i--) if (c.msgs[i][0] === "a") return c.msgs[i][1]; return ""; }
+
+// ---------- local storage (IndexedDB) ----------
+const idb = (() => {
+  let p;
+  const open = () => p || (p = new Promise((res, rej) => {
+    const r = indexedDB.open("chat-shelf", 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("chats", { keyPath: "id" }); r.result.createObjectStore("kv"); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const run = async (store, mode, fn) => {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const t = d.transaction(store, mode); const r = fn(t.objectStore(store)); let out;
+      if (r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    });
+  };
+  return {
+    all: () => run("chats", "readonly", s => s.getAll()),
+    put: list => run("chats", "readwrite", s => { list.forEach(c => s.put(c)); }),
+    clear: () => run("chats", "readwrite", s => s.clear()),
+    get: k => run("kv", "readonly", s => s.get(k)),
+    set: (k, v) => run("kv", "readwrite", s => s.put(v, k)),
+  };
+})();
+
+// ---------- synced organization (db capability) ----------
+let orgRef = null, saveT = null, saving = Promise.resolve();
+function setSync(t) { $("#sync").textContent = t; }
+function saveOrg() {
+  if (S.example) return;
+  S.org.updatedAt = Date.now();
+  safe(() => idb.set("org", S.org));
+  clearTimeout(saveT);
+  if (!orgRef) return;
+  setSync("Saving…");
+  saveT = setTimeout(() => {
+    const body = JSON.parse(JSON.stringify(S.org));
+    saving = saving.then(() => orgRef.set(body)).then(
+      () => setSync("Projects synced to your Claude account"),
+      e => setSync(e?.code === "quota_exceeded" || e?.code === "invalid_argument" ? "Too many chats to sync. Saved on this iPad only." : "Sync paused. Saved on this iPad.")
+    );
+  }, 1200);
+}
+function normalizeOrg(d) {
+  return { projects: Array.isArray(d?.projects) ? d.projects.map(p => ({ ...p })) : [], meta: { ...(d?.meta || {}) }, updatedAt: d?.updatedAt || 0 };
+}
+async function connectSync() {
+  const use = window.claude?.use;
+  if (!use) { setSync("Saved on this iPad only"); return; }
+  const [db, user] = await Promise.all([safe(() => use("db"), null), safe(() => use("user"), null)]);
+  const uid = user ? await safe(() => user.id(), null) : null;
+  if (!db || !uid) { setSync("Saved on this iPad only"); return; }
+  try {
+    orgRef = db.doc(`data/users/${uid}/org`);
+    const snap = await orgRef.get();
+    const remote = snap.exists ? normalizeOrg(snap.data()) : null;
+    if (remote && remote.updatedAt > (S.org.updatedAt || 0) && !S.example) {
+      S.org = remote; await safe(() => idb.set("org", S.org)); render();
+    } else if (remote && S.example) {
+      S.pendingOrg = remote;
+    } else if (!S.example && S.org.updatedAt) saveOrg();
+    setSync("Projects synced to your Claude account");
+  } catch (e) { orgRef = null; setSync("Saved on this iPad only"); }
+}
+
+// ---------- parsers ----------
+function mkChat(src, oid, title, created, updated, msgs, extra = {}) {
+  msgs = msgs.filter(m => m[1] && m[1].trim());
+  if (!msgs.length) return null;
+  const id = chatId(src, oid);
+  return { id, src, oid: String(oid), title: clip(title || firstUser({ msgs }) || "Untitled chat", 140), created, updated: updated || created, msgs, url: extra.url || (SOURCES[src].url && extra.linkable !== false ? SOURCES[src].url(oid) : ""), hint: extra.hint || "" };
+}
+
+function parseChatGPT(arr) {
+  const out = [];
+  for (const conv of arr) {
+    if (!conv || !conv.mapping) continue;
+    const map = conv.mapping;
+    let node = conv.current_node;
+    if (!node || !map[node]) { // fall back to the deepest leaf
+      node = Object.keys(map).find(k => !(map[k].children || []).length);
+    }
+    const chain = []; const seen = new Set();
+    while (node && map[node] && !seen.has(node)) { seen.add(node); chain.push(map[node]); node = map[node].parent; }
+    chain.reverse();
+    const msgs = [];
+    for (const n of chain) {
+      const m = n.message; if (!m || !m.content) continue;
+      const role = m.author?.role; if (role !== "user" && role !== "assistant") continue;
+      if (m.metadata?.is_visually_hidden_from_conversation) continue;
+      const parts = (m.content.parts || []).filter(x => typeof x === "string");
+      let t = parts.join("\n");
+      if (!t && typeof m.content.text === "string") t = m.content.text;
+      if (m.content.content_type && !["text", "multimodal_text"].includes(m.content.content_type) && role === "assistant") continue;
+      msgs.push([role === "user" ? "u" : "a", t]);
+    }
+    const oid = conv.conversation_id || conv.id || hash(JSON.stringify(conv.title) + conv.create_time);
+    const gizmo = String(conv.gizmo_id || "");
+    const c = mkChat("chatgpt", oid, conv.title, toMs(conv.create_time), toMs(conv.update_time), msgs, { hint: gizmo.startsWith("g-p-") ? "chatgpt-project:" + gizmo : "" });
+    if (c) out.push(c);
+  }
+  return out;
+}
+
+function parseClaude(arr, projectNames) {
+  const out = [];
+  for (const conv of arr) {
+    if (!conv || !Array.isArray(conv.chat_messages)) continue;
+    const msgs = conv.chat_messages.map(m => {
+      let t = typeof m.text === "string" ? m.text : "";
+      if (!t && Array.isArray(m.content)) t = m.content.filter(x => x && x.type === "text").map(x => x.text).join("\n");
+      return [m.sender === "human" ? "u" : "a", t];
+    });
+    const puid = conv.project_uuid || conv.project?.uuid || "";
+    const pname = puid && projectNames[puid] ? projectNames[puid] : (conv.project?.name || "");
+    const c = mkChat("claude", conv.uuid, conv.name, toMs(conv.created_at), toMs(conv.updated_at), msgs, { hint: pname ? "name:" + pname : "" });
+    if (c) out.push(c);
+  }
+  return out;
+}
+
+// Gemini Takeout lists single prompts; group prompts less than 45 minutes apart into one conversation.
+function groupGemini(entries) {
+  entries = entries.filter(e => e.prompt || e.response).sort((a, b) => a.time - b.time);
+  const out = []; let cur = null;
+  for (const e of entries) {
+    if (!cur || !e.time || !cur.last || e.time - cur.last > 45 * 60 * 1000) { cur = { first: e.time, last: e.time, msgs: [] }; out.push(cur); }
+    if (e.prompt) cur.msgs.push(["u", e.prompt]);
+    if (e.response) cur.msgs.push(["a", e.response]);
+    cur.last = e.time || cur.last;
+  }
+  return out.map(g => mkChat("gemini", "s" + g.first + ":" + hash(g.msgs[0]?.[1] || ""), firstUser({ msgs: g.msgs }), g.first, g.last, g.msgs, { linkable: false })).filter(Boolean);
+}
+const htmlText = h => { const d = new DOMParser().parseFromString(String(h || ""), "text/html"); return (d.body.innerText || d.body.textContent || "").trim(); };
+function parseGeminiJSON(arr) {
+  return groupGemini(arr.filter(e => /gemini|bard/i.test(e.header || "") || /gemini|bard/i.test((e.products || []).join(" "))).map(e => ({
+    time: toMs(e.time),
+    prompt: String(e.title || "").replace(/^Prompted\s*/i, "").trim(),
+    response: (e.safeHtmlItem || []).map(x => htmlText(x.html)).join("\n\n"),
+  })).filter(e => e.prompt && !/^(Used|Created|Gave feedback|Selected)\b/i.test(e.prompt) || e.response));
+}
+function parseGeminiHTML(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const dateRe = /([A-Z][a-z]{2,8}\.? \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})?\s*(?:[AP]\.?M\.?)?)/;
+  const entries = [];
+  doc.querySelectorAll(".outer-cell").forEach(cell => {
+    const head = cell.querySelector(".header-cell")?.textContent || "";
+    if (head && !/gemini|bard/i.test(head)) return;
+    const content = cell.querySelector(".content-cell");
+    if (!content) return;
+    const parts = []; let buf = "";
+    content.childNodes.forEach(n => {
+      if (n.nodeName === "BR") { parts.push(buf); buf = ""; }
+      else buf += (n.innerText ?? n.textContent ?? "");
+    });
+    parts.push(buf);
+    const di = parts.findIndex(p => dateRe.test(p));
+    if (di < 0) return;
+    const prompt = parts.slice(0, di).join("\n").replace(/^\s*Prompted\s*/i, "").trim();
+    const time = toMs(parts[di].match(dateRe)[1].replace(/ /g, " ").replace(/\./g, ""));
+    const response = parts.slice(di + 1).join("\n").trim();
+    if (/^(Used|Created|Gave feedback|Selected)\b/i.test(prompt) && !response) return;
+    entries.push({ time, prompt, response });
+  });
+  return groupGemini(entries);
+}
+
+function parseMarkdown(name, text, lastModified, src = "perplexity") {
+  const lines = text.replace(/\r/g, "").split("\n");
+  const h = lines.findIndex(l => /^#{1,3}\s+\S/.test(l));
+  const title = h >= 0 ? lines[h].replace(/^#+\s+/, "") : name.replace(/\.(md|markdown|txt)$/i, "");
+  const body = (h >= 0 ? lines.slice(h + 1) : lines).join("\n").trim();
+  const url = (text.match(/https:\/\/(?:www\.)?perplexity\.ai\/search\/[^\s)\]]+/) || [])[0] || "";
+  const msgs = h >= 0 ? [["u", title], ["a", body]] : [["u", body]];
+  return mkChat(src, "f:" + name + ":" + hash(text.slice(0, 2000)), title, lastModified || Date.now(), 0, msgs, { url, linkable: false });
+}
+
+// Read one file (or zip entry) and return chats. ctx carries Claude project names across files.
+async function parseFile(name, getText, lastModified, ctx) {
+  const lower = name.toLowerCase();
+  const base = lower.split("/").pop();
+  if (/\.(md|markdown|txt)$/.test(base)) return [parseMarkdown(base, await getText(), lastModified)].filter(Boolean);
+  if (/\.html?$/.test(base)) {
+    if (!/myactivity|gemini|bard/.test(lower)) return [];
+    return parseGeminiHTML(await getText());
+  }
+  if (!/\.json$/.test(base)) return [];
+  if (/^(users|memories|shared_conversations|message_feedback|model_comparisons|user)\.json$/.test(base)) return [];
+  let data;
+  try { data = JSON.parse(await getText()); } catch (e) { return []; }
+  if (data && data.chatShelfBackup) { ctx.backup = data; return []; }
+  if (!Array.isArray(data)) return [];
+  if (base === "projects.json") { data.forEach(p => { if (p.uuid && p.name) ctx.claudeProjects[p.uuid] = p.name; }); return []; }
+  const s = data.find(x => x && typeof x === "object") || {};
+  if (s.mapping) return parseChatGPT(data);
+  if (s.chat_messages) { ctx.claudeRaw.push(data); return []; }
+  if ("header" in s || "safeHtmlItem" in s || /myactivity/.test(lower)) return parseGeminiJSON(data);
+  return [];
+}
+
+async function importFiles(files) {
+  const log = $("#importLog"); log.hidden = false; log.textContent = "";
+  const say = t => { log.textContent += t + "\n"; };
+  const ctx = { claudeProjects: {}, claudeRaw: [], backup: null };
+  let found = [];
+  for (const f of files) {
+    try {
+      if (/\.zip$/i.test(f.name) || f.type === "application/zip") {
+        if (!window.JSZip) { say(`${f.name}: zip reader did not load. Unzip it in the Files app and choose the files inside.`); continue; }
+        say(`Opening ${f.name}…`);
+        const zip = await JSZip.loadAsync(f);
+        const entries = Object.values(zip.files).filter(e => !e.dir && !/__MACOSX/.test(e.name));
+        // projects.json first so Claude chats can be matched to project names
+        entries.sort((a, b) => (/projects\.json$/i.test(b.name) ? 1 : 0) - (/projects\.json$/i.test(a.name) ? 1 : 0));
+        for (const e of entries) {
+          const got = await parseFile(e.name, () => e.async("string"), e.date?.getTime?.(), ctx);
+          found = found.concat(got);
+        }
+      } else {
+        found = found.concat(await parseFile(f.name, () => f.text(), f.lastModified, ctx));
+      }
+    } catch (e) { say(`${f.name}: could not read this file (${e?.message || e}).`); }
+  }
+  for (const raw of ctx.claudeRaw) found = found.concat(parseClaude(raw, ctx.claudeProjects));
+  if (ctx.backup) { await restoreBackup(ctx.backup); say("Restored your Chat Shelf backup."); }
+  if (!found.length) { if (!ctx.backup) say("No chats found in those files. Check that you picked the export file (the .zip or conversations.json)."); return; }
+  const counts = {};
+  found.forEach(c => counts[c.src] = (counts[c.src] || 0) + 1);
+  await addChats(found);
+  say("Added " + Object.entries(counts).map(([k, n]) => `${n} ${SOURCES[k].label}`).join(", ") + " chats.");
+  toast(`Imported ${found.length} chat${found.length === 1 ? "" : "s"}`);
+}
+
+async function addChats(list) {
+  if (S.example) leaveExample();
+  const fresh = [];
+  for (const c of list) {
+    const old = S.byId.get(c.id);
+    if (old) { Object.assign(old, c); } else { S.chats.push(c); S.byId.set(c.id, c); fresh.push(c); }
+  }
+  applyHints(fresh);
+  await safe(() => idb.put(list));
+  saveOrg(); render();
+}
+
+// Chats that already sat in a project in their own app go straight into a matching project here.
+function applyHints(list) {
+  const byName = new Map(S.org.projects.map(p => [p.name.toLowerCase(), p]));
+  const gptGroups = {};
+  for (const c of list) {
+    if (!c.hint || metaOf(c.id).p) continue;
+    if (c.hint.startsWith("name:")) {
+      const nm = c.hint.slice(5); let p = byName.get(nm.toLowerCase());
+      if (!p) { p = { id: projId(), name: nm, desc: "From your Claude projects" }; S.org.projects.push(p); byName.set(nm.toLowerCase(), p); }
+      setMeta(c.id, p.id, metaOf(c.id).s);
+    } else if (c.hint.startsWith("chatgpt-project:")) (gptGroups[c.hint] ||= []).push(c);
+  }
+  let i = 1;
+  for (const [hint, cs] of Object.entries(gptGroups)) {
+    if (cs.length < 2) continue;
+    const nm = `ChatGPT project ${i++}`;
+    let p = S.org.projects.find(x => x.gpt === hint);
+    if (!p) { p = { id: projId(), name: nm, desc: "Chats from one ChatGPT project. Rename me.", gpt: hint }; S.org.projects.push(p); }
+    cs.forEach(c => setMeta(c.id, p.id, metaOf(c.id).s));
+  }
+}
+
+// ---------- examples ----------
+function loadExample() {
+  const d = (days) => Date.now() - days * 864e5;
+  const ex = [
+    ["chatgpt", "Rewrite my resume summary for a project coordinator role", 3, "Can you make my resume summary sound more confident? I'm applying for project coordinator jobs.", "Here's a stronger summary: Organized project coordinator with 5 years keeping teams on schedule…"],
+    ["claude", "Cover letter for the Riverside Health job", 4, "Help me write a cover letter for a scheduling coordinator role at Riverside Health.", "Dear Hiring Manager, I'm excited to apply for the Scheduling Coordinator position…"],
+    ["gemini", "Interview questions for coordinator roles", 6, "What questions do they usually ask in a project coordinator interview?", "Common questions include: Tell me about a time you managed competing deadlines…"],
+    ["perplexity", "Average project coordinator salary in Ohio", 7, "What is the average salary for a project coordinator in Ohio?", "Recent listings put it between $48,000 and $62,000 a year…"],
+    ["chatgpt", "Weeknight dinner ideas with chicken", 10, "Give me 5 easy weeknight dinners with chicken thighs.", "1. Sheet-pan lemon chicken 2. Chicken fried rice…"],
+    ["claude", "Meal plan and grocery list for the week", 12, "Make a 5-day dinner plan and a grocery list for two people.", "Monday: turkey tacos. Tuesday: pasta primavera…"],
+    ["chatgpt", "What does APR mean", 15, "what does APR mean on a credit card", "APR stands for annual percentage rate…"],
+    ["gemini", "Lesson plan: prompting basics for beginners", 20, "Outline a 30-minute lesson that teaches beginners how to write a good AI prompt.", "Part 1 (5 min): What a prompt is. Part 2 (10 min): Role, task, context, format…"],
+  ];
+  S.chats = ex.map(([src, title, days, q, a], i) => ({ id: "ex" + i, src, oid: "ex" + i, title, created: d(days), updated: d(days), msgs: [["u", q], ["a", a]], url: "", hint: "", example: true }));
+  S.byId = new Map(S.chats.map(c => [c.id, c]));
+  S.org = { projects: [{ id: "exJob", name: "Job search", desc: "Resume, cover letters and interview prep", summary: "#### What this is\nYour coordinator job search: resume, a Riverside Health cover letter, interview prep and salary research.\n#### Where you left off\nThe cover letter draft is finished. Salary research suggests asking for $55k–$60k.\n#### Next steps\n- Practice two interview answers out loud\n- Send the Riverside Health application" }, { id: "exFood", name: "Meals", desc: "Dinner ideas and grocery lists" }], meta: { ex0: "exJob", ex1: "exJob", ex2: "exJob", ex3: "exJob", ex4: "exFood", ex5: "exFood", ex6: QUICK }, updatedAt: 0 };
+  S.example = true;
+}
+function leaveExample() {
+  S.chats = []; S.byId = new Map(); S.example = false; S.view = "all";
+  S.org = S.pendingOrg || { projects: [], meta: {}, updatedAt: 0 }; S.pendingOrg = null;
+}
+
+// ---------- filtering ----------
+function inView(c) {
+  const { p, s } = metaOf(c.id);
+  if (S.src !== "all" && c.src !== S.src) return false;
+  switch (S.view) {
+    case "all": return s !== "a" && s !== "d";
+    case "unsorted": return !p && s !== "a" && s !== "d";
+    case "archive": return s === "a";
+    case "delete": return s === "d";
+    default: return p === S.view && s !== "d";
+  }
+}
+function matches(c, q) {
+  if (!q) return true;
+  const t = (c.title + "\n" + textOf(c)).toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => t.includes(w));
+}
+function sorted(list) {
+  const by = { recent: (a, b) => b.updated - a.updated, oldest: (a, b) => a.created - b.created, longest: (a, b) => b.msgs.length - a.msgs.length, title: (a, b) => a.title.localeCompare(b.title) }[S.sort];
+  return list.slice().sort(by);
+}
+const dupKey = c => c.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+// ---------- render ----------
+function render() {
+  $("#exampleBanner").hidden = !S.example;
+  $("#btnUndo").hidden = !S.undo;
+  renderTally(); renderDrawer(); renderSources(); renderProject(); renderCards();
+}
+function renderTally() {
+  const n = {}; S.chats.forEach(c => n[c.src] = (n[c.src] || 0) + 1);
+  const unsorted = S.chats.filter(c => { const m = metaOf(c.id); return !m.p && !m.s; }).length;
+  const parts = [`<span><b class="mono">${S.chats.length}</b> chats</span>`]
+    .concat(Object.keys(SOURCES).filter(k => n[k]).map(k => `<span><span class="dot" style="--c:${SOURCES[k].color};display:inline-block"></span> ${SOURCES[k].label} <b class="mono">${n[k]}</b></span>`))
+    .concat(`<span><b class="mono">${unsorted}</b> not in a project yet</span>`);
+  $("#tally").innerHTML = parts.join("");
+}
+function count(view) { const keep = S.view; S.view = view; const n = S.chats.filter(inView).length; S.view = keep; return n; }
+function renderDrawer() {
+  const tabs = [["all", "All chats"], ["unsorted", "Not in a project"]]
+    .concat(S.org.projects.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => [p.id, p.name]))
+    .concat([[QUICK, "Quick questions"], ["archive", "Archived"], ["delete", "Marked to delete"]]);
+  $("#drawer").innerHTML = tabs.map(([id, name]) => `<button class="tab${S.view === id ? " on" : ""}" data-view="${esc(id)}" type="button"><span class="nm">${esc(name)}</span><span class="n">${count(id)}</span></button>`).join("");
+}
+function renderSources() {
+  const opts = [["all", "All apps"]].concat(Object.keys(SOURCES).filter(k => S.chats.some(c => c.src === k)).map(k => [k, SOURCES[k].label]));
+  $("#srcs").innerHTML = opts.map(([k, l]) => `<button class="chip${S.src === k ? " on" : ""}" data-src="${k}" type="button">${k !== "all" ? `<span class="dot" style="--c:${SOURCES[k].color}"></span>` : ""}${esc(l)}</button>`).join("");
+}
+function renderProject() {
+  const el = $("#projPanel");
+  const p = S.org.projects.find(x => x.id === S.view);
+  const names = { all: ["All chats", "Everything except archived and deleted chats."], unsorted: ["Not in a project", "Chats nobody has filed yet. “Organize with AI” sorts these for you."], archive: ["Archived", "Finished chats you want to keep but don't need to see."], delete: ["Marked to delete", "Use the cleanup checklist to delete these inside each app."], [QUICK]: ["Quick questions", "One-off questions you probably don't need to keep."] };
+  if (!p) {
+    const [t, d] = names[S.view] || ["", ""];
+    const extra = S.view === "delete" || S.view === QUICK ? `<div class="tools"><button class="btn small" data-act="plan" type="button">Cleanup checklist</button></div>` : "";
+    el.innerHTML = `<div class="phead"><div><h2>${esc(t)}</h2><div class="muted">${esc(d)}</div></div>${extra}</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="phead">
+      <div style="min-width:0"><div class="label">Project</div><h2>${esc(p.name)}</h2>${p.desc ? `<div class="muted">${esc(p.desc)}</div>` : ""}</div>
+      <div class="tools">
+        <button class="btn small primary" data-act="summarize" type="button">${p.summary ? "Refresh summary" : "Catch me up"}</button>
+        <button class="btn small" data-act="plan" type="button">Move-into-app checklist</button>
+        <button class="btn small" data-act="rename" type="button">Rename</button>
+        <button class="btn small ghost danger" data-act="delproj" type="button">Delete project</button>
+      </div>
+    </div>
+    <form id="renameForm" class="newproj" hidden><input id="renameInput" type="text" maxlength="60" value="${esc(p.name)}" aria-label="Project name"><button class="btn small" type="submit">Save</button></form>
+    ${p.summary ? `<div class="summary"><div class="label">Catch-up${p.summaryAt ? " · " + fmtDate(p.summaryAt) : ""}</div><div class="md">${md(p.summary)}</div></div>` : ""}`;
+}
+function cardHTML(c, dups) {
+  const { p, s } = metaOf(c.id);
+  const opts = [["", "No project"]].concat(S.org.projects.slice().sort((a, b) => a.name.localeCompare(b.name)).map(x => [x.id, x.name])).concat([[QUICK, "Quick questions"]]);
+  const short = c.msgs.length <= 2;
+  return `<article class="card" style="--c:${SOURCES[c.src].color}" data-id="${c.id}">
+    <div class="stripe"></div>
+    <div class="body">
+      <button class="t" data-act="open" type="button" title="${esc(c.title)}">${esc(c.title)}</button>
+      <div class="snip">${esc(clip(firstUser(c), 160))}</div>
+      <div class="meta"><span>${SOURCES[c.src].label}</span><span class="mono">${fmtDate(c.updated)}</span><span class="mono">${c.msgs.length} msg</span>
+        ${dups.has(dupKey(c)) ? `<span class="pill warn">Possible duplicate</span>` : ""}
+        ${short && !p ? `<span class="pill">Short</span>` : ""}
+        ${S.view === "all" || S.view === "unsorted" ? (p ? `<span class="pill acc">${esc(projName(p))}</span>` : "") : ""}
+        ${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener" style="color:var(--accent)">Open in ${SOURCES[c.src].label}</a>` : ""}
+      </div>
+    </div>
+    <div class="ctl">
+      <select data-act="move" aria-label="Project for ${esc(c.title)}">${opts.map(([v, l]) => `<option value="${esc(v)}"${v === p ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>
+      <div class="marks">
+        <button class="mark${s === "a" ? " on" : ""}" data-act="arch" type="button" aria-pressed="${s === "a"}">Archive</button>
+        <button class="mark del${s === "d" ? " on" : ""}" data-act="del" type="button" aria-pressed="${s === "d"}">Delete</button>
+      </div>
+    </div>
+  </article>`;
+}
+function renderCards() {
+  const list = sorted(S.chats.filter(c => inView(c) && matches(c, S.q)));
+  const seen = new Map(); S.chats.forEach(c => { const k = dupKey(c); if (k.length > 6) seen.set(k, (seen.get(k) || 0) + 1); });
+  const dups = new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k));
+  const el = $("#cards");
+  if (!list.length) {
+    const msg = !S.chats.length ? "No chats yet. Tap “Import chats” to bring in your history."
+      : S.q ? "No chats match that filter." : S.view === "unsorted" ? "Every chat is in a project." : "Nothing here yet. Move chats in with the project menu on each card.";
+    el.innerHTML = `<div class="empty">${esc(msg)}</div>`; return;
+  }
+  el.innerHTML = list.slice(0, S.shown).map(c => cardHTML(c, dups)).join("") +
+    (list.length > S.shown ? `<button class="btn more" data-act="more" type="button">Show ${Math.min(PAGE, list.length - S.shown)} more of ${list.length - S.shown}</button>` : "");
+}
+
+// tiny, safe markdown: headings, bullets, bold
+function md(s) {
+  const lines = esc(s).split("\n"); let html = "", inList = false;
+  for (let l of lines) {
+    l = l.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\[(\d+)\]/g, '<sup class="mono">[$1]</sup>');
+    if (/^\s*[-*•]\s+/.test(l)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${l.replace(/^\s*[-*•]\s+/, "")}</li>`; continue; }
+    if (inList) { html += "</ul>"; inList = false; }
+    if (/^#{1,6}\s+/.test(l)) html += `<h4>${l.replace(/^#+\s+/, "")}</h4>`;
+    else if (l.trim()) html += `<p>${l}</p>`;
+  }
+  return html + (inList ? "</ul>" : "");
+}
+
+// ---------- sheets ----------
+function openSheet(id) { $(id).hidden = false; }
+function closeSheets() { document.querySelectorAll(".scrim").forEach(s => s.hidden = true); }
+document.addEventListener("click", e => {
+  if (e.target.matches("[data-close]") || e.target.classList.contains("scrim")) closeSheets();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheets(); });
+let confirmFn = null;
+function ask(title, text, yes, fn) { $("#confirmTitle").textContent = title; $("#confirmText").textContent = text; $("#confirmYes").textContent = yes; confirmFn = fn; openSheet("#confirmSheet"); }
+$("#confirmYes").onclick = () => { closeSheets(); const f = confirmFn; confirmFn = null; f && f(); };
+
+function openChat(c) {
+  $("#chatTitle").textContent = c.title;
+  $("#chatMeta").innerHTML = `<span>${SOURCES[c.src].label}</span><span class="mono">${fmtDate(c.created)}</span><span class="mono">${c.msgs.length} messages</span>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener" style="color:var(--accent)">Open in ${SOURCES[c.src].label}</a>` : ""}`;
+  $("#chatBody").innerHTML = c.msgs.slice(0, 400).map(m => `<div class="msg ${m[0]}">${esc(m[1].length > 12000 ? m[1].slice(0, 12000) + "\n…" : m[1])}</div>`).join("") + (c.msgs.length > 400 ? `<div class="muted">Showing the first 400 messages.</div>` : "");
+  openSheet("#chatSheet");
+}
+
+// Checklist of what to do inside each app, since no app can reorganize another app's chats.
+function openPlan(kind) {
+  let chats, intro, title;
+  const p = S.org.projects.find(x => x.id === S.view);
+  if (p && kind !== "cleanup") {
+    chats = S.chats.filter(c => metaOf(c.id).p === p.id && metaOf(c.id).s !== "d");
+    title = `Move “${p.name}” into each app`;
+    intro = `Make a project or folder called “${p.name}” in each app, then move these chats into it.`;
+  } else {
+    chats = S.chats.filter(c => metaOf(c.id).s === "d" || metaOf(c.id).p === QUICK && metaOf(c.id).s !== "a");
+    title = "Cleanup checklist";
+    intro = "Delete these inside each app. Chats marked to delete come first, then quick one-off questions.";
+  }
+  const groups = {};
+  chats.forEach(c => (groups[c.src] ||= []).push(c));
+  let txt = "", html = "";
+  for (const k of Object.keys(SOURCES)) {
+    const g = groups[k]; if (!g) continue;
+    g.sort((a, b) => b.updated - a.updated);
+    txt += `${SOURCES[k].label} (${g.length})\n` + g.map(c => `[ ] ${c.title} — ${fmtDate(c.updated)}${c.url ? " " + c.url : ""}`).join("\n") + "\n\n";
+    html += `<b>${SOURCES[k].label} (${g.length})</b>\n` + g.map(c => `☐ ${esc(c.title)} <span class="muted">${fmtDate(c.updated)}</span>${c.url ? ` <a href="${esc(c.url)}" target="_blank" rel="noopener">open</a>` : ""}`).join("\n") + "\n\n";
+  }
+  if (!chats.length) html = txt = p && kind !== "cleanup" ? "This project has no chats yet." : "Nothing to clean up. Mark chats with Delete, or let “Organize with AI” find quick questions.";
+  if (groups.gemini || groups.perplexity) { const n = "\nGemini and Perplexity chats have no direct links. Search for the title in the app.\n"; txt += n; html += esc(n); }
+  $("#planTitle").textContent = title; $("#planIntro").textContent = intro; $("#planBody").innerHTML = html.trim();
+  $("#btnCopyPlan").onclick = () => copy(txt.trim(), $("#planBody"));
+  openSheet("#planSheet");
+}
+function copy(text, el) {
+  navigator.clipboard?.writeText(text).then(() => toast("Copied"), () => selectEl(el)) ?? selectEl(el);
+}
+function selectEl(el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Tap Copy."); }
+
+// ---------- AI ----------
+let samplePromise = null;
+const getSample = () => samplePromise || (samplePromise = window.claude?.use ? safe(() => window.claude.use("sample"), null) : Promise.resolve(null));
+function aiError(e) {
+  const m = {
+    not_granted: "Claude wasn't allowed for this page. You can still sort chats by hand.",
+    sampling_disabled: "Claude isn't available for this account.",
+    rate_limited: "You've hit a usage limit. Try again in a little while.",
+    session_expired: "Sign in to Claude again, then retry.",
+    prompt_too_large: "That was too much text at once. Try a smaller project.",
+    invalid_json: "Claude's answer came back in the wrong shape. Tap the button again.",
+    cancelled: "Stopped.",
+  };
+  return m[e?.code] || "Claude couldn't finish. Check your connection and try again.";
+}
+function busy(on, text, frac) {
+  $("#busy").hidden = !on; if (text) $("#busyText").textContent = text;
+  $("#busyBar").style.width = Math.round((frac || 0) * 100) + "%";
+  $("#btnOrganize").disabled = on;
+}
+$("#btnStop").onclick = () => S.abort?.abort();
+
+async function organize() {
+  const sample = await getSample();
+  if (!sample) { toast("AI sorting works when this page is open in Claude."); return; }
+  const todo = S.chats.filter(c => { const m = metaOf(c.id); return !m.p && m.s !== "a" && m.s !== "d"; });
+  if (!todo.length) { toast("Every chat is already in a project."); return; }
+  S.undo = JSON.parse(JSON.stringify(S.org));
+  const line = c => `${c.id}\t${SOURCES[c.src].label}\t${new Date(c.created || 0).toISOString().slice(0, 10)}\t${c.msgs.length} msgs\t${clip(c.title, 90)}\t${clip(firstUser(c), 200)}`;
+  const batches = []; let cur = [], size = 0;
+  for (const c of todo.sort((a, b) => a.created - b.created)) {
+    const l = line(c); if (size + l.length > AI_BATCH_BYTES && cur.length) { batches.push(cur); cur = []; size = 0; }
+    cur.push([c, l]); size += l.length + 1;
+  }
+  if (cur.length) batches.push(cur);
+  S.abort = new AbortController();
+  let placed = 0;
+  try {
+    for (let i = 0; i < batches.length; i++) {
+      busy(true, `Sorting ${todo.length} chats into projects (part ${i + 1} of ${batches.length})…`, i / batches.length);
+      const existing = S.org.projects.map(p => `${p.id}\t${p.name}\t${p.desc || ""}`).join("\n") || "(none yet)";
+      const prompt = `You are organizing one person's AI chat history (from ChatGPT, Claude, Gemini and Perplexity) into projects, like folders.
+
+Existing projects (id, name, description):
+${existing}
+
+Chats to file (id, app, date, length, title, first message):
+${batches[i].map(x => x[1]).join("\n")}
+
+Rules:
+- Group chats by the real-life goal or topic they serve (e.g. "Job search", "Home budget", "Kids' school", "Novel draft"). Prefer existing projects when they fit.
+- Create a new project only when at least 2 chats share a goal. Aim for 4–15 projects total, named in 1–4 plain words.
+- Short one-off questions (trivia, definitions, quick lookups) that serve no ongoing goal go to "quick".
+- A chat that fits nothing and isn't a one-off gets "" (leave unsorted).
+
+Reply with only JSON in this shape:
+{"newProjects":[{"key":"n1","name":"Job search","description":"Resume, cover letters and interviews"}],"assign":{"<chat id>":"<existing project id, new project key, quick, or empty string>"}}`;
+      const res = await sample.json(prompt, { signal: S.abort.signal, modelTier: "default", cache: false });
+      const keyMap = {};
+      for (const np of (res?.newProjects || [])) {
+        if (!np?.name) continue;
+        const same = S.org.projects.find(p => p.name.toLowerCase() === String(np.name).toLowerCase());
+        if (same) { keyMap[np.key] = same.id; continue; }
+        const p = { id: projId(), name: clip(np.name, 60), desc: clip(np.description || "", 140) };
+        S.org.projects.push(p); keyMap[np.key] = p.id;
+      }
+      const valid = new Set(S.org.projects.map(p => p.id).concat(QUICK));
+      for (const [cid, v] of Object.entries(res?.assign || {})) {
+        if (!S.byId.has(cid)) continue;
+        const pid = keyMap[v] || v;
+        if (pid && valid.has(pid)) { setMeta(cid, pid, metaOf(cid).s); placed++; }
+      }
+      saveOrg(); render();
+    }
+    busy(false);
+    toast(`Filed ${placed} chats. Use the menu on any card to move one.`);
+  } catch (e) {
+    busy(false); saveOrg(); render(); toast(placed ? `Filed ${placed} chats, then stopped. ${aiError(e)}` : aiError(e));
+  } finally { S.abort = null; render(); }
+}
+
+async function summarize() {
+  const p = S.org.projects.find(x => x.id === S.view); if (!p) return;
+  const sample = await getSample();
+  if (!sample) { toast("Catch-up summaries work when this page is open in Claude."); return; }
+  const chats = S.chats.filter(c => metaOf(c.id).p === p.id && metaOf(c.id).s !== "d").sort((a, b) => a.updated - b.updated);
+  if (!chats.length) { toast("This project has no chats yet."); return; }
+  const per = Math.max(600, Math.floor(180000 / chats.length));
+  const body = chats.slice(-80).map(c => `### ${c.title} (${SOURCES[c.src].label}, ${fmtDate(c.updated)})\nAsked: ${clip(firstUser(c), per * 0.35)}\nLatest answer: ${clip(lastAssistant(c), per * 0.65)}`).join("\n\n");
+  const prompt = `Below are the chats in one person's project called "${p.name}", from several AI apps, oldest first. Write a short catch-up so they can pick it back up.
+
+Use exactly these headings, written as markdown "####" lines:
+#### What this is
+(1–2 sentences)
+#### Where you left off
+(2–4 sentences, mention which app and chat holds the latest work)
+#### Decisions so far
+(bullets, only real decisions)
+#### Next steps
+(2–5 concrete bullets)
+#### Chats you can drop
+(bullets naming duplicate or dead-end chats by title, or "None")
+
+Be plain and specific. No preamble.
+
+${body}`;
+  S.abort = new AbortController();
+  busy(true, `Reading ${chats.length} chats in “${p.name}”…`, .3);
+  try {
+    const { text } = await sample(prompt, { signal: S.abort.signal, modelTier: "default", onText: ({ text }) => { p.summary = text; renderProject(); } });
+    p.summary = text; p.summaryAt = Date.now(); saveOrg();
+  } catch (e) { if (e?.text) p.summary = e.text; toast(aiError(e)); }
+  finally { busy(false); S.abort = null; renderProject(); }
+}
+
+function scoreChat(c, words) {
+  const title = c.title.toLowerCase(), body = textOf(c).toLowerCase(); let s = 0;
+  for (const w of words) { if (title.includes(w)) s += 5; let i = 0, n = 0; while ((i = body.indexOf(w, i)) !== -1 && n < 20) { n++; i += w.length; } s += n; }
+  return s;
+}
+function excerpt(c, words, max) {
+  const t = c.msgs.map(m => (m[0] === "u" ? "Me: " : "AI: ") + m[1]).join("\n");
+  if (t.length <= max) return t;
+  const low = t.toLowerCase(); const hits = [];
+  for (const w of words) { const i = low.indexOf(w); if (i >= 0) hits.push(i); }
+  let out = t.slice(0, max * 0.3);
+  hits.sort((a, b) => a - b).slice(0, 3).forEach(i => { out += "\n…" + t.slice(Math.max(0, i - max * 0.12), i + max * 0.12) + "…"; });
+  return out.slice(0, max);
+}
+async function askChats(q) {
+  const box = $("#answer");
+  const sample = await getSample();
+  if (!sample) { box.hidden = false; box.innerHTML = `<div class="muted">Asking works when this page is open in Claude. You can still use the filter box below.</div>`; return; }
+  const stop = new Set("the a an and or of to in on for with my me i what did do does about how is was were are when where which who that this from it".split(" "));
+  const words = q.toLowerCase().split(/[^a-z0-9$%']+/).filter(w => w.length > 2 && !stop.has(w));
+  let ranked = S.chats.map(c => [c, scoreChat(c, words)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 12).map(x => x[0]);
+  if (!ranked.length) ranked = S.chats.slice().sort((a, b) => b.updated - a.updated).slice(0, 12);
+  const ctx = ranked.map((c, i) => `[${i + 1}] "${c.title}" (${SOURCES[c.src].label}, ${fmtDate(c.updated)})\n${excerpt(c, words, 14000)}`).join("\n\n---\n\n");
+  const prompt = `Answer the question using only these excerpts from the person's own AI chats. Cite chats like [2]. If the chats don't answer it, say so and name the closest chats. Be brief and plain.
+
+Question: ${q}
+
+${ctx}`;
+  box.hidden = false;
+  box.innerHTML = `<div class="answer-head"><div class="label">From your chats</div><button class="btn small ghost" id="closeAnswer" type="button">Close</button></div><div class="md" id="answerText"><span class="muted">Reading ${ranked.length} chats…</span></div><div class="cites">${ranked.map((c, i) => `<button class="cite" data-open="${c.id}" type="button" style="border-left:3px solid ${SOURCES[c.src].color}">[${i + 1}] ${esc(clip(c.title, 50))}</button>`).join("")}</div>`;
+  S.abort?.abort(); S.abort = new AbortController();
+  try {
+    const { text } = await sample(prompt, { signal: S.abort.signal, modelTier: "default", onText: ({ text }) => { const t = $("#answerText"); if (t) t.innerHTML = md(text); } });
+    const t = $("#answerText"); if (t) t.innerHTML = md(text);
+  } catch (e) { const t = $("#answerText"); if (t && e?.code !== "cancelled") t.innerHTML = (e?.text ? md(e.text) : "") + `<p class="muted">${esc(aiError(e))}</p>`; }
+}
+
+// ---------- backup ----------
+async function backup() {
+  if (S.example) { toast("Import your chats first."); return; }
+  const dl = window.claude?.use ? await safe(() => window.claude.use("downloads"), null) : null;
+  if (!dl) { toast("Saving a file works when this page is open in Claude."); return; }
+  const data = JSON.stringify({ chatShelfBackup: 1, savedAt: new Date().toISOString(), org: S.org, chats: S.chats });
+  try { const r = await dl.save({ filename: `chat-shelf-backup-${new Date().toISOString().slice(0, 10)}.json`, data: new Blob([data], { type: "application/json" }) }); if (r?.status === "saved") toast("Backup saved"); }
+  catch (e) { toast("The backup wasn't saved."); }
+}
+async function restoreBackup(b) {
+  if (S.example) leaveExample();
+  const chats = Array.isArray(b.chats) ? b.chats.filter(c => c && c.id && SOURCES[c.src] && Array.isArray(c.msgs)) : [];
+  chats.forEach(c => { if (!S.byId.has(c.id)) { S.chats.push(c); S.byId.set(c.id, c); } });
+  await safe(() => idb.put(chats));
+  if (b.org) { S.org = normalizeOrg(b.org); }
+  saveOrg(); render();
+}
+
+// ---------- events ----------
+$("#btnImport").onclick = $("#btnImport2").onclick = () => { $("#importLog").hidden = true; openSheet("#importSheet"); };
+$("#btnOrganize").onclick = () => organize();
+$("#btnCleanup").onclick = () => openPlan("cleanup");
+$("#btnBackup").onclick = () => backup();
+$("#btnUndo").onclick = () => { if (!S.undo) return; S.org = S.undo; S.undo = null; saveOrg(); render(); toast("Last AI sort undone"); };
+$("#btnWipe").onclick = () => ask("Remove all data?", "This removes every imported chat and project from Chat Shelf. Your chats inside ChatGPT, Claude, Gemini and Perplexity are not touched.", "Remove everything", async () => {
+  await safe(() => idb.clear());
+  S.chats = []; S.byId = new Map(); S.org = { projects: [], meta: {}, updatedAt: 0 }; S.view = "all"; S.undo = null;
+  saveOrg(); render(); toast("Removed");
+});
+$("#fileInput").onchange = async e => { const files = [...e.target.files]; e.target.value = ""; if (files.length) await importFiles(files); };
+const drop = $("#drop");
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", async e => { e.preventDefault(); drop.classList.remove("over"); const files = [...(e.dataTransfer?.files || [])]; if (files.length) await importFiles(files); });
+$("#btnPaste").onclick = async () => {
+  const text = $("#pasteText").value.trim(); if (!text) { toast("Paste a chat first."); return; }
+  const src = $("#pasteSrc").value; const title = $("#pasteTitle").value.trim();
+  const c = parseMarkdown((title || clip(text, 60)) + ".md", (title ? "# " + title + "\n" : "") + text, Date.now(), src);
+  if (!c) return;
+  c.url = $("#pasteUrl").value.trim().startsWith("https://") ? $("#pasteUrl").value.trim() : c.url;
+  await addChats([c]);
+  $("#pasteText").value = $("#pasteTitle").value = $("#pasteUrl").value = "";
+  toast("Chat added");
+};
+$("#askForm").onsubmit = e => { e.preventDefault(); const q = $("#askInput").value.trim(); if (q) askChats(q); };
+$("#answer").addEventListener("click", e => {
+  if (e.target.id === "closeAnswer") { S.abort?.abort(); $("#answer").hidden = true; return; }
+  const b = e.target.closest("[data-open]"); if (b) { const c = S.byId.get(b.dataset.open); if (c) openChat(c); }
+});
+$("#newProjForm").onsubmit = e => {
+  e.preventDefault(); const nm = $("#newProjName").value.trim(); if (!nm) return;
+  const p = { id: projId(), name: nm, desc: "" }; S.org.projects.push(p); $("#newProjName").value = "";
+  S.view = p.id; S.shown = PAGE; saveOrg(); render();
+};
+$("#drawer").onclick = e => { const b = e.target.closest("[data-view]"); if (!b) return; S.view = b.dataset.view; S.shown = PAGE; render(); };
+$("#srcs").onclick = e => { const b = e.target.closest("[data-src]"); if (!b) return; S.src = b.dataset.src; S.shown = PAGE; render(); };
+let qT; $("#search").oninput = e => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value.trim(); S.shown = PAGE; renderCards(); }, 200); };
+$("#sort").onchange = e => { S.sort = e.target.value; renderCards(); };
+$("#projPanel").addEventListener("click", e => {
+  const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
+  const p = S.org.projects.find(x => x.id === S.view);
+  if (a === "summarize") summarize();
+  else if (a === "plan") openPlan(p ? "project" : "cleanup");
+  else if (a === "rename") { const f = $("#renameForm"); f.hidden = !f.hidden; if (!f.hidden) $("#renameInput").focus(); }
+  else if (a === "delproj" && p) ask(`Delete “${p.name}”?`, "Its chats move back to “Not in a project”. No chats are deleted.", "Delete project", () => {
+    for (const [id] of Object.entries(S.org.meta)) if (metaOf(id).p === p.id) setMeta(id, "", metaOf(id).s);
+    S.org.projects = S.org.projects.filter(x => x !== p); S.view = "all"; saveOrg(); render();
+  });
+});
+$("#projPanel").addEventListener("submit", e => {
+  if (e.target.id !== "renameForm") return; e.preventDefault();
+  const p = S.org.projects.find(x => x.id === S.view); const nm = $("#renameInput").value.trim();
+  if (p && nm) { p.name = clip(nm, 60); saveOrg(); render(); }
+});
+$("#cards").addEventListener("click", e => {
+  const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
+  if (a === "more") { S.shown += PAGE; renderCards(); return; }
+  const card = e.target.closest(".card"); const c = card && S.byId.get(card.dataset.id); if (!c) return;
+  const m = metaOf(c.id);
+  if (a === "open") openChat(c);
+  else if (a === "arch") { setMeta(c.id, m.p, m.s === "a" ? "" : "a"); saveOrg(); render(); }
+  else if (a === "del") { setMeta(c.id, m.p, m.s === "d" ? "" : "d"); saveOrg(); render(); }
+});
+$("#cards").addEventListener("change", e => {
+  if (e.target.dataset.act !== "move") return;
+  const card = e.target.closest(".card"); const id = card.dataset.id;
+  setMeta(id, e.target.value, metaOf(id).s); saveOrg(); render();
+  toast(e.target.value ? `Moved to ${projName(e.target.value)}` : "Removed from project");
+});
+
+// ---------- boot ----------
+(async () => {
+  const chats = await safe(() => idb.all(), []);
+  const org = await safe(() => idb.get("org"), null);
+  if (chats && chats.length) {
+    S.chats = chats; S.byId = new Map(chats.map(c => [c.id, c]));
+    if (org) S.org = normalizeOrg(org);
+  } else loadExample();
+  render();
+  connectSync();
+})();
+})();
+</script>
